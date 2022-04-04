@@ -1,3 +1,15 @@
+# WTF
+Quick and dirty change of algorithm from the original:
+- "put on the server with smallest amount of players"
+to:
+- "put on a random server except for the most occupied one"
+
+Good for testing, but still suffers a crash if one of the servers dies.
+So fix before running it in production. :D
+
+Made for MultiPaper, can load balance 20 players per second easily.
+
+
 # VelocityLoadBalancer
 A simple plugin to balance player counts on a Velocity proxy.
 

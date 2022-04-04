@@ -52,20 +52,44 @@ public class LoadBalancerPlugin {
     public void onKick(KickedFromServerEvent event) {
         if (event.kickedDuringServerConnect())
             return;
-        Optional<RegisteredServer> opt = proxyServer.getAllServers().stream().filter(server -> server != event.getServer()).filter(lobbies::contains).min(Comparator.comparingInt(s -> s.getPlayersConnected().size()));
+        Optional<RegisteredServer> opt = proxyServer.getAllServers().stream().filter(server -> server != event.getServer()).min(Comparator.comparingInt(s -> s.getPlayersConnected().size()));
         opt.ifPresent(registeredServer -> event.setResult(KickedFromServerEvent.RedirectPlayer.create(registeredServer)));
     }
+
+    static int counter = 0;
 
     @Subscribe
     public void onJoin(ServerPreConnectEvent event) {
         if (!connectedPlayers.contains(event.getPlayer().getUniqueId())) {
             connectedPlayers.add(event.getPlayer().getUniqueId());
-            Optional<RegisteredServer> opt = proxyServer.getAllServers().stream().filter(lobbies::contains).min(Comparator.comparingInt(s -> s.getPlayersConnected().size()));
+            Collection<RegisteredServer> servers = proxyServer.getAllServers();
+//            int choice = java.util.concurrent.ThreadLocalRandom.current().nextInt(servers.size());
+            int worstSoFar = 0;
+            int worstServer = -1;
+            int cnt = 0;
+            for(RegisteredServer server: servers) {
+                if(server.getPlayersConnected().size() > worstSoFar) {
+                    worstSoFar = server.getPlayersConnected().size();
+                    worstServer = cnt;
+                }
+                cnt++;
+            }
+            int choice = counter % servers.size();
+            if(choice == cnt) {
+                choice++;
+                choice %= servers.size();
+            }
+            counter++;
+            RegisteredServer selectedServer = (RegisteredServer)servers.toArray()[choice];
+            System.out.println("SELECTED " + selectedServer.toString());
+            event.setResult(ServerPreConnectEvent.ServerResult.allowed(selectedServer));
+/*
+            Optional<RegisteredServer> opt = proxyServer.getAllServers().stream().min(Comparator.comparingInt(s -> s.getPlayersConnected().size()));
             if (!opt.isPresent()) {
                 logger.warn("No valid lobby servers were detected, so joining player '" + event.getPlayer().getUsername() + "' was connected to the default server.");
                 return;
             }
-            event.setResult(ServerPreConnectEvent.ServerResult.allowed(opt.get()));
+            event.setResult(ServerPreConnectEvent.ServerResult.allowed(opt.get()));*/
         }
     }
 }
